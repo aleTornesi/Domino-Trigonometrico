@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Game : MonoBehaviour
 {
@@ -18,7 +20,7 @@ public class Game : MonoBehaviour
     {
         players = new List<GameObject>[2];
         gameCards = new List<GameObject>();
-        for (int i = 0; i < 2; i++)
+        for (var i = 0; i < 2; i++)
         {
             players[i] = new List<GameObject>();
         }
@@ -40,9 +42,9 @@ public class Game : MonoBehaviour
         }
         cnt_carte = 55 - n_cards;
 
-        foreach (List<GameObject> p in players)
+        foreach (var p in players)
         {
-            for (int i = 0; i < Camera.main.pixelWidth; i += Camera.main.pixelWidth / n_cards)
+            for (var i = 0; i < Camera.main.pixelWidth; i += Camera.main.pixelWidth / n_cards)
             {
                 p.Add(Instantiate(tessera, Camera.main.ScreenToWorldPoint(new Vector3(i, -50)), Quaternion.identity));
 
@@ -73,10 +75,33 @@ public class Game : MonoBehaviour
     GameObject referenceCard = null;
     int index_card_to_achor;
     int index_card_to_insert;
-
     // Update is called once per frame
     void Update()
     {
+        if (gameCards.Count > 1)
+        {
+            gameCards[0].GetComponentsInChildren<setText>()[0].tessera.anchored = false;
+            gameCards[0].GetComponentsInChildren<setText>()[1].tessera.anchored = true;
+            for (var i = 1; i < gameCards.Count-1; i++)
+            {
+                foreach (var go in gameCards[i].GetComponentsInChildren<setText>())
+                {
+                    go.tessera.anchored = true;
+                }
+            }
+            
+        }
+        // else
+        // {
+        //     foreach (var gameObject in gameCards)
+        //     {
+        //         foreach (var setText in gameObject.GetComponentsInChildren<setText>())
+        //         {
+        //             setText.tessera.anchored = false;
+        //         }
+        //     }
+        // }
+        
         if (Input.GetKeyDown(KeyCode.S))
         {
             changePlayer();
@@ -122,8 +147,7 @@ public class Game : MonoBehaviour
         Debug.Log(getGameCardData());
         try
         {
-            bool compatible = isCompatible();
-            if (compatible)
+            if (isCompatible())
             {
                 useCard();
             }
@@ -171,17 +195,78 @@ public class Game : MonoBehaviour
                 setText setText1 = array1[j];
                 if (!setText1.tessera.anchored)
                 {
-                    compatible = compatible || setText.tessera.value() - setText1.tessera.value() < 0.01;
+                    Debug.Log($"{setText.tessera} = {setText.tessera.value()}\n" +
+                              $"{setText1.tessera} = {setText1.tessera.value()}");
+                    if (setText.tessera.value() < 0 && setText1.tessera.value() < 0)
+                    {
+                        float diff;
+                        if (Mathf.Abs(setText.tessera.value()) > Mathf.Abs(setText1.tessera.value()))
+                        {
+                            diff = Mathf.Abs(setText.tessera.value()) - Mathf.Abs(setText1.tessera.value());
+                        }
+                        else
+                        {
+                            diff = Mathf.Abs(setText1.tessera.value()) - Mathf.Abs(setText.tessera.value());
+                        }
+                        compatible = diff < 0.01;
+                    }
+                    else
+                    {
+                        Debug.Log($"{setText.tessera} = {setText.tessera.value()}\n" +
+                                  $"{setText1.tessera} = {setText1.tessera.value()}");
+                        if (setText.tessera.value() >= 0 && setText1.tessera.value() >= 0)
+                        {
+                            float diff = 5.0f;
+                            if (setText.tessera.value() > setText1.tessera.value())
+                            {
+                                diff = setText.tessera.value() - setText1.tessera.value();
+                            }
+                            else
+                            {
+                                diff = setText1.tessera.value() - setText.tessera.value();
+                            }
+                            compatible = diff < 0.01;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
                     if (compatible)
                     {
+                        Debug.Log($"{setText.tessera}=={setText1.tessera}");
                         setText.tessera.anchored = true;
                         setText1.tessera.anchored = true;
                         referenceCard = players[player][current_card];
-                        if(!(i == 0 && j == 1))
-                            equalToFirstCard = true;
-                        if(i == j)
+                        if (i == 0 && j == 0)
                         {
+                            equalToFirstCard = true;
                             turnCard = true;
+                        }
+                        else
+                        {
+                            if (i == 0 && j == 1)
+                            {
+                                equalToFirstCard = false;
+                                turnCard = false;
+                            }
+                            else
+                            {
+                                if (i == 1 && j == 0)
+                                {
+                                    equalToFirstCard = true;
+                                    turnCard = false;
+                                }
+                                else
+                                {
+                                    if (i == 1 && j == 1)
+                                    {
+                                        equalToFirstCard = false;
+                                        turnCard = true;
+                                    }
+                                }
+                            }
                         }
                         index_card_to_insert = i;
                         index_card_to_achor = j;
@@ -197,7 +282,16 @@ public class Game : MonoBehaviour
                     setText setText1 = array2[j];
                     if (!setText1.tessera.anchored)
                     {
-                        compatible = compatible || setText.tessera.value() - setText1.tessera.value() < 0.01;
+                        float diff = 5.0f;
+                        if (setText.tessera.value() > setText1.tessera.value())
+                        {
+                            diff = setText.tessera.value() - setText1.tessera.value();
+                        }
+                        else
+                        {
+                            diff = setText1.tessera.value() - setText.tessera.value();
+                        }
+                        compatible = diff < 0.01;
                         if (compatible)
                         {
                             setText.tessera.anchored = true;
@@ -223,11 +317,13 @@ public class Game : MonoBehaviour
         { 
             foreach (GameObject go in gameCards)
             {
-                go.transform.position = new Vector3(go.transform.position.x + 40f, go.transform.position.y, go.transform.position.z);
+                var position = go.transform.position;
+                position = new Vector3(position.x + 40f, position.y, position.z);
+                go.transform.position = position;
             }
             gameCards.Insert(0, referenceCard);
             gameCards[0].transform.position = new Vector3(-252, 131);
-            gameCards[0].transform.eulerAngles = new Vector3(0, 265, 115);
+            gameCards[0].transform.eulerAngles = new Vector3(0, 95, -65);
             gameCards[0].transform.localScale = new Vector3(1.5f, 1.5f, 0.7f);
             if (turnCard)
             {
@@ -239,56 +335,33 @@ public class Game : MonoBehaviour
                 temp = gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera;
                 gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera = gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera;
                 gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera = temp;
+                foreach (var setText in gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>())
+                {
+                    setText.rewrite();
+                }
             }
-
-            if (index_card_to_insert == 0)
-            {
-                gameCards[0].GetComponentsInChildren<setText>()[1].tessera.anchored = false;
-                gameCards[0].GetComponentsInChildren<setText>()[0].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera.anchored = false;
-            }
-
-            if (index_card_to_insert == 1)
-            {
-                gameCards[0].GetComponentsInChildren<setText>()[0].tessera.anchored = false;
-                gameCards[0].GetComponentsInChildren<setText>()[1].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera.anchored = false;
-            }
-
-
 
         }
         else
         {
             Debug.Log($"index_anchored={index_card_to_achor}");
             Debug.Log($"index_insert={index_card_to_insert}");
-            gameCards.Add(players[player][current_card]);
+            gameCards.Add(referenceCard);
             gameCards[gameCards.Count - 1].transform.position = new Vector3(this.space, 131f);
             if (index_card_to_achor == index_card_to_insert)
             {
                 Tessera temp = gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera = gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera;
+                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera =
+                    gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera;
                 gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera = temp;
                 gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].rewrite();
                 gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].rewrite();
             }
+            
 
-            if (index_card_to_insert == 0)
-            {
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera.anchored = false;
-            }
-
-            if (index_card_to_insert == 1)
-            {
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[0].tessera.anchored = true;
-                gameCards[gameCards.Count - 1].GetComponentsInChildren<setText>()[1].tessera.anchored = false;
-            }
         }
-        referenceCard.transform.eulerAngles = new Vector3(0, 95, -65);
-        referenceCard.transform.localScale = new Vector3(1.5f, 1.5f, 0.7f);
+        gameCards[gameCards.Count - 1].transform.eulerAngles = new Vector3(0, 95, -65);
+        gameCards[gameCards.Count - 1].transform.localScale = new Vector3(1.5f, 1.5f, 0.7f);
         this.space += 40;
         changePlayer();
     }

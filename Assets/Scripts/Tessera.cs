@@ -254,11 +254,11 @@ public class Tessera
                         if (members[0].Contains("√"))
                             if (members[0].Contains("-"))
                             {
-                                return Mathf.Sqrt(float.Parse(members[0].Remove(1, 2))) / float.Parse(members[1]);
+                                return -Mathf.Sqrt(float.Parse(members[0].Remove(0, 2))) / float.Parse(members[1]);
                             }
                             else
                             {
-                                return float.Parse(members[0].Remove(0, 1)) / float.Parse(members[1]);
+                                return Mathf.Sqrt(float.Parse(members[0].Remove(0, 1))) / float.Parse(members[1]);
 
                             }
                         return float.Parse(members[0]) / float.Parse(members[1]);
@@ -281,22 +281,24 @@ public class Tessera
                 if (members[0].Contains("√"))
                     if (members[0].Contains("-"))
                     {
-                        Debug.Log($"{members[0].Remove(1, 2)}/{float.Parse(members[1])}");
+                        Debug.Log($"-{members[0].Remove(0, 2)}/{float.Parse(members[1])}");
                     }
                     else
                     {
                         Debug.Log($"{members[0].Remove(0, 1)} / {members[1]}");
 
                     }
-                Debug.Log($"{members[0]} / {members[1]}");
+                else
+                    Debug.Log($"{members[0]} / {members[1]}");
             }
             else if (members.Length == 1)
             {
                 if (members[0].Contains("√"))
                     Debug.Log(Mathf.Sqrt(float.Parse(members[0].Remove(0, 1))));
-                Debug.Log($"{members[0]}");
+                else
+                    Debug.Log($"{members[0]}");
             }
-            return 0;
+            throw new FormatException("Invalid string format");
         }
     }
     float toRadians(float degrees)
